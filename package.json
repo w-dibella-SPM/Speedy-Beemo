@@ -7,8 +7,8 @@
   "scripts": {
     "build": "tsc"
   },
-  "dependencies": {},
   "devDependencies": {
+    "@types/node": "^25.1.0",
     "typescript": "^5.5.3"
   },
   "private": true
