@@ -30,23 +30,30 @@ L'esecuzione del tool segue un processo semi-automatico per la creazione delle c
 ## ⚙️ Logica di default
 Se non diversamente specificato, Speedy Beemo propone questa configurazione:
 - **Pollice su 👍 su "Conta KO"**: inserito in **tutte le attività** dove è presente uno **scarto**.
-- **Pollice su 👍 su "Conta OK"**: inserito solo nella prima attività dove è presente un prodotto (contrassegnata dalle freccine verdi "🟢 **>>**").
-
+- **Pollice su 👍 su "Conta OK"**:
+  - Inserito solo se l'articolo configurato è un **prodotto finito** (F010*).
+  - Inserito solo nelle attività AV e AW. Se non presenti, il pollice viene inserito nella prima attività contrassegnata dalle freccine verdi "🟢 **>>**".
+  - Entrambe le condizioni devono essere rispettate.
 
 ## 🛠 Override logica di default
-È possibile modificare la logica di default modificando il file `.env`:
+È possibile modificare la logica di default creando e modificando il file `.env`:
 ```
-| Chiave               | Valori           | Descrizione                                                                                                                                                        |
-|----------------------|------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| APPLY_DEFAULT_CONFIG | `true` / `false` | Se impostato su `false`, lo scraper **non esegue alcuna pre-compilazione automatica** e lascia tutti i campi vuoti per l’inserimento manuale da parte dell’utente. |
-| APPLY_THUMB_OK       | `true` / `false` | Se impostato su `false`, lo scraper **non applica il pollice 👍 al “Conta OK”** sulla prima attività e si limita a gestire esclusivamente i KO.                    |
+| Chiave               | Valori          | Descrizione                                                                                                                                                                  |
+|----------------------|-----------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| APPLY_CONFIG         | true / false    | Se impostato su false, lo scraper non esegue alcuna pre-compilazione automatica e lascia tutti i campi vuoti per l’inserimento manuale da parte dell’utente.                 |
+| APPLY_THUMB_OK       | true / false    | Se impostato su false, lo scraper non applica il pollice al “Conta OK” sulla prima attività e si limita a gestire esclusivamente i KO.                                       |
+| THUMB_OK_ACTIVITIES  | ASC,AFC,...     | Permette di specificare quali sono le attività per le quali vanno contati i pezzi OK sugli articoli finiti. Per ogni configurazione, verrà considerata la prima disponibile. |
 ```
 _Esempio di file `.env`_:
 
 ```
-APPLY_DEFAULT_CONFIG=true
+APPLY_CONFIG=true
 APPLY_THUMB_OK=false
+THUMB_OK_ACTIVITIES=ASC,AFC,ASC_ST_PVD
 ```
+
+Non è obbligatorio creare il file `.env` prima di eseguire il programma. È necessario solo nel caso in cui si voglia modificare il funzionamento di default del programma.
+Inoltre, prima di ogni esecuzione, verrà visualizzata la configurazione attualmente in uso (`DEFAULT` o `.env`).
 
 ## 🔍 Log e diagnostica
 I file di log vengono generati automaticamente a ogni esecuzione del programma.

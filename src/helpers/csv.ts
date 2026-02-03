@@ -1,23 +1,42 @@
 import fs from "fs";
-import type { ArticoloDaConfigurare } from "../types/articolo-da-configurare";
-import { BASE_DIR, CSV_FILE_NAME } from "../const";
+import {ArticoloDaConfigurare, articoloDaConfigurareSchema, CSV_HEADER_LINE} from "../types/articolo-da-configurare";
+import { BASE_DIR } from "../const";
 import path from "path";
+import {CsvFileException} from "../exceptions/csv-file.exception";
+
+export const CSV_FILE_NAME = "config.csv";
+const CSV_FILE_PATH = path.join(BASE_DIR, "config.csv");
 
 export function getArticoliDaConfigurare(): Map<string, ArticoloDaConfigurare> {
+    if (!fs.existsSync(CSV_FILE_PATH)) {
+        throw CsvFileException.missingFile();
+    }
+
+    const firstLine = fs
+        .readFileSync(CSV_FILE_PATH, "utf8")
+        .split("\n")[0]
+        .trim();
+
+    if (firstLine !== CSV_HEADER_LINE) {
+        throw CsvFileException.missingHeaderLine();
+    }
+
     const entries = fs
-        .readFileSync(path.join(BASE_DIR, CSV_FILE_NAME), "utf-8")
+        .readFileSync(CSV_FILE_PATH, "utf-8")
         .split("\n")
         .slice(1)
-        .filter(l => l.trim().length > 0)
-        .map(l => {
-            const [ idModello, articolo, famiglia ] = l.split(",").map(s => s.trim());
-            return [
-                `${idModello}${articolo}${famiglia}`,
-                {
-                    idModello: Number(idModello),
-                    articolo,
-                    famiglia
-                }] as const;
+        .filter(line => line.trim().length > 0)
+        .map(line => {
+            const [ idModello, articolo, famiglia ] = line.split(",").map(s => s.trim());
+            const parseArticoloDaConfigurare = articoloDaConfigurareSchema.safeParse({
+                idModello, articolo, famiglia,
+            });
+
+            if (!parseArticoloDaConfigurare.success) {
+                throw CsvFileException.parseFailed(line, parseArticoloDaConfigurare.error);
+            }
+
+            return [`${idModello}${articolo}${famiglia}`, parseArticoloDaConfigurare.data] as const;
         });
 
     return new Map(entries);

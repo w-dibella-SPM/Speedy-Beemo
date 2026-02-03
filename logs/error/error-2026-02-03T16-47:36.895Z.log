@@ -1,0 +1,9 @@
+[2/3/2026, 5:48:23 PM] Errore durante la configurazione del seguente articolo: {
+  "idModello": 23856,
+  "articolo": "F010-000030",
+  "famiglia": "NEW HOLLAND"
+} Dettagli sull'errore: {
+  "stack": "locator.waitFor: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('#id_table_panth_modprod > tbody > tr:nth-child(1)').filter({ hasText: /^23856$/ }) to be visible\u001b[22m\n\n    at SpeedyBeemo.waitForSuccessOrThrow (/home/william/Desktop/Lavoro/SPM/web_scrapers/Speedy-Beemo/src/helpers/speedy-beemo.ts:189:28)\n    at SpeedyBeemo.configureArticolo (/home/william/Desktop/Lavoro/SPM/web_scrapers/Speedy-Beemo/src/helpers/speedy-beemo.ts:139:20)\n    at async SpeedyBeemo.configureArticoli (/home/william/Desktop/Lavoro/SPM/web_scrapers/Speedy-Beemo/src/helpers/speedy-beemo.ts:79:17)\n    at async SpeedyBeemo.run (/home/william/Desktop/Lavoro/SPM/web_scrapers/Speedy-Beemo/src/helpers/speedy-beemo.ts:47:13)\n    at async main (/home/william/Desktop/Lavoro/SPM/web_scrapers/Speedy-Beemo/src/main.ts:20:5)",
+  "message": "locator.waitFor: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('#id_table_panth_modprod > tbody > tr:nth-child(1)').filter({ hasText: /^23856$/ }) to be visible\u001b[22m\n",
+  "name": "TimeoutError"
+}
