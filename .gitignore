@@ -14,3 +14,4 @@ dist/*
 logs/*
 
 .env
+*.csv

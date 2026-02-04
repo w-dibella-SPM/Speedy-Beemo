@@ -27,7 +27,7 @@ export class Logger implements ILogger {
     private readonly errorFilePath: string;
 
     private constructor() {
-        this.executionTimestamp = new Date().toISOString().replace(":", "-");
+        this.executionTimestamp = new Date().toISOString().replaceAll(":", "-");
         this.infoFilePath = path.join(LOGS_DIRECTORY, INFO_LOG_FILE_NAME, `${INFO_LOG_FILE_NAME}-${this.executionTimestamp}.log`);
         this.errorFilePath = path.join(LOGS_DIRECTORY, ERROR_LOG_FILE_NAME, `${ERROR_LOG_FILE_NAME}-${this.executionTimestamp}.log`);
 
@@ -51,7 +51,20 @@ export class Logger implements ILogger {
     }
 
     private buildMessage<T extends unknown[]>(data: T): [string, T] {
-        return [`[${new Date().toLocaleString()}]`, data];
+        const sanitizedData = data.map(d => {
+            if (d instanceof Error || typeof d !== "object" || d === null) return d;
+
+            const dCopy = { ...d };
+            for (const key of Object.keys(dCopy)) {
+                if (key.match(/password/i)) {
+                    // @ts-ignore
+                    dCopy[key] = "*".repeat(12);
+                }
+            }
+            return dCopy;
+        }) as T;
+        
+        return [`[${new Date().toLocaleString()}]`, sanitizedData];
     }
 
     private appendToFile(filePath: string, msg: [string, unknown[]]): void {
@@ -62,11 +75,10 @@ export class Logger implements ILogger {
                     return JSON.stringify(d, Object.getOwnPropertyNames(d), 2);
                 }
 
-                return d !== null && typeof d === "object"
-                    ? JSON.stringify(d, null, 2)
-                    : String(d)
-                }
-            )
+                if (d === null || typeof d !== "object") return String(d);
+
+                return JSON.stringify(d, null, 2);
+            })
             .join(" ");
 
         fs.appendFileSync(filePath, `${timestamp} ${dataToString}\n`);

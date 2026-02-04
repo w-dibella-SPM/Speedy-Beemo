@@ -1,5 +1,5 @@
 import {CSV_FILE_NAME, CSV_FILE_PATH} from "../helpers/csv";
-import {CSV_HEADER_LINE} from "../types/articolo-da-configurare";
+import { CSV_HEADER_LINE } from "../helpers/csv";
 import {ZodError} from "zod";
 
 export class CsvFileException extends Error {

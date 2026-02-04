@@ -1,14 +1,19 @@
-import {Browser, BrowserContext, chromium, Locator, Page} from "playwright";
-import {ArticoloDaConfigurare} from "../types/articolo-da-configurare";
+import fs from "fs";
+import {Browser, BrowserContext, chromium, Dialog, Locator, Page} from "playwright";
+import { type ArticoloDaConfigurare } from "../types/articolo-da-configurare";
 import {Logger} from "./logger";
 import {SpeedyBeemoException} from "../exceptions/speedy-beemo.exception";
+import { CSV_HEADER_LINE } from "./csv";
+import path from "path";
 
 export class SpeedyBeemo {
     private static readonly SM2CARE_BASE_URL = "http://172.23.0.111/";
     private static readonly SM2CARE_LOGIN_PAGE_URL = `${SpeedyBeemo.SM2CARE_BASE_URL}login.php`;
     private static readonly SM2CARE_HOMEPAGE_URL = `${SpeedyBeemo.SM2CARE_BASE_URL}index.php`;
-    private static readonly SM2CARE_LOGIN_TIMEOUT_MS = 10000;
+    private static readonly SM2CARE_LOGIN_TIMEOUT_MS = 100;
     private static readonly SM2CARE_LOGIN_ITERATIONS = 6;
+    private static readonly REMAINING_ARTICOLI_DA_CONFIGURARE_DIR = "articoli_da_configurare_rimanenti";
+    private static readonly REMAINING_ARTICOLI_DA_CONFIGURARE_FILE_NAME = "articoli_da_configurare_rimanenti.csv";
 
     static readonly WEB_SCRAPER_PARAMS = {
         APPLY_CONFIG: (process.env.APPLY_CONFIG || "true") === "true",
@@ -47,9 +52,12 @@ export class SpeedyBeemo {
             await this.login();
             await this.navigateToBeemo();
             await this.configureArticoli();
+
+            this.logger.info("Esecuzione terminata... Il browser verrà chiuso a momenti.");
+            this.saveRemainingArticoliDaConfigurare();
         }
         finally {
-            // await this.browser.close();
+            await this.browser.close();
         }
     }
 
@@ -69,9 +77,8 @@ export class SpeedyBeemo {
             }
             catch (e) {
                 if (i + 1 === SpeedyBeemo.SM2CARE_LOGIN_ITERATIONS) {
-                    this.logger.error("Login non effettuato entro il tempo limite.");
+                    throw new SpeedyBeemoException("Login non effettuato entro il tempo limite.");
                 }
-                throw e; 
             }
         }
     }
@@ -86,6 +93,7 @@ export class SpeedyBeemo {
         for (const [key, articoloDaConfigurare] of this.articoliDaConfigurare.entries()) {
             try {
                 await this.configureArticolo(articoloDaConfigurare);
+                // Se la configurazione non ha lanciato eccezioni, toglilo dalla map.
                 this.articoliDaConfigurare.delete(key);
             }
             catch (e) {
@@ -100,6 +108,9 @@ export class SpeedyBeemo {
     }
 
     private async configureArticolo(articoloDaConfigurare: ArticoloDaConfigurare): Promise<void> {
+        const articoloDaConfigurareString: string = Object.values(articoloDaConfigurare).join(" ");
+        this.logger.info("Configurazione in corso...", articoloDaConfigurare);
+
         // Cerca la famiglia
         await this.page.fill("#id_table_famiglie_filter > label > input", articoloDaConfigurare.famiglia);
 
@@ -215,7 +226,37 @@ export class SpeedyBeemo {
         }
 
         // Informa l'utente che la configurazione è stata applicata. Chiedi di salvare oppure di chiudere la finestra.
-        this.logger.info("Configurazione completata:", articoloDaConfigurare);
+
+        this.logger.info("Configurazione completata...");
+        await this.showBlockingDialog(`Verifica la configurazione per [${articoloDaConfigurareString}]. Se ritieni che sia corretta, clicca su "Salva", altrimenti su "Chiudi". Clicca "Ok" per chiudere questo messaggio.`);
+
+        const configuraModelloFormLocator: Locator = this.page.locator("#id_pris_articoli_configForm");
+        const configurationAlreadyExistsToastLocator: Locator = this.page.locator("#toast-container > div > div.toast-message", { hasText: "SyntaxError: Unexpected end of JSON input" });
+        const configurationSavedSuccessfullyLocator: Locator = this.page.locator("body > div.swal2-container > div.swal2-modal.show-swal2", { hasText: "Dati memorizzati." });
+
+        await Promise.race([
+            // Aspetto che venga visualizzato il popup di salvataggio andato a buon fine
+            configurationSavedSuccessfullyLocator.waitFor({ state: "visible", timeout: 0 }),
+            // Aspetto che compaia il toast di "configurazione già esistente".
+            // Nonostante i controlli fatti all'inizio, potrebbe capitare che la configurazione corrente venga creata da un altro utente mentre il webscraper sta ancora girando. 
+            configurationAlreadyExistsToastLocator.waitFor({ state: "visible", timeout: 0 })
+                .then(() => {
+                    throw new SpeedyBeemoException(`La configurazione [${articoloDaConfigurareString}] esiste già.`);
+                })
+                .finally(async () => {
+                    // Clicca su "chiudi" per chiudere il form di configurazione del modello
+                    await this.page.click("#id_pris_articoli_configForm > div.modal-footer > button.btn.btn-white");
+                }),
+            // Oppure aspetto che il form del modello venga chiuso
+            configuraModelloFormLocator.waitFor({ state: "hidden", timeout: 0 }).then(() => { 
+                throw new SpeedyBeemoException(`Configurazione non salvata per [${articoloDaConfigurareString}].` )
+            }),
+        ]);
+
+        // Clicca su "OK" nel dialog che conferma il salvataggio corretto della configurazione.
+        await this.page.click("body > div.swal2-container > div.swal2-modal.show-swal2 > button.swal2-confirm.styled");
+
+        this.logger.info("Configurazione salvata", articoloDaConfigurare);
     }
 
     private async waitForSuccessOrThrow(successLocator: Locator, errorLocator: Locator, exception: SpeedyBeemoException): Promise<void> {
@@ -241,5 +282,35 @@ export class SpeedyBeemo {
             count = await trLocator.count();
         }
         return count;
+    }
+
+    private async showBlockingDialog(prompt: string): Promise<void> {
+        // Obbliga l'utente ad accettare manualmente i dialog.
+        this.page.on("dialog", () => {});
+
+        // Attendi che l'utente visualizzi l'alert.
+        await this.page.evaluate(prpt => alert(prpt), prompt)
+
+        // Ripristina il comportamento di default dei dialog.
+        this.page.on("dialog", dialog => dialog.dismiss());
+    }
+
+    private saveRemainingArticoliDaConfigurare(): void {
+        fs.mkdirSync(SpeedyBeemo.REMAINING_ARTICOLI_DA_CONFIGURARE_DIR);
+
+        const filePath: string = path.join(
+            SpeedyBeemo.REMAINING_ARTICOLI_DA_CONFIGURARE_DIR,
+            `${SpeedyBeemo.REMAINING_ARTICOLI_DA_CONFIGURARE_FILE_NAME}_${new Date().toISOString().replaceAll(":", "-")}`
+        ); 
+        
+        // Add header line
+        fs.writeFileSync(filePath, CSV_HEADER_LINE + "\n");
+
+        for (const articoloDaConfigurare of this.articoliDaConfigurare.values()) {
+            fs.appendFileSync(
+                filePath,
+                `${articoloDaConfigurare.idModello},${articoloDaConfigurare.articolo},${articoloDaConfigurare.famiglia}\n`,
+            );        
+        }
     }
 }

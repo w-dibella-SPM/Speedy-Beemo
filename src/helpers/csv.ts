@@ -1,11 +1,12 @@
 import fs from "fs";
-import {ArticoloDaConfigurare, articoloDaConfigurareSchema, CSV_HEADER_LINE} from "../types/articolo-da-configurare";
+import {ArticoloDaConfigurare, articoloDaConfigurareSchema} from "../types/articolo-da-configurare";
 import { BASE_DIR } from "../const";
 import path from "path";
 import {CsvFileException} from "../exceptions/csv-file.exception";
 
 export const CSV_FILE_NAME = "config.csv";
 export const CSV_FILE_PATH = path.join(BASE_DIR, "config.csv");
+export const CSV_HEADER_LINE = "ID_MODELLO,ARTICOLO,FAMIGLIA";
 
 export function getArticoliDaConfigurare(): Map<string, ArticoloDaConfigurare> {
     if (!fs.existsSync(CSV_FILE_PATH)) {
