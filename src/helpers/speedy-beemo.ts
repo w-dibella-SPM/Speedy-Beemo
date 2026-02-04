@@ -13,7 +13,9 @@ export class SpeedyBeemo {
     static readonly WEB_SCRAPER_PARAMS = {
         APPLY_CONFIG: (process.env.APPLY_CONFIG || "true") === "true",
         APPLY_THUMB_OK: (process.env.APPLY_THUMB_OK || "true")  === "true",
-        THUMB_OK_ACTIVITIES: process.env.THUMB_OK_ACTIVITIES?.split(",") || ["AV", "AW"],
+        THUMB_OK_ACTIVITIES: process.env.THUMB_OK_ACTIVITIES?.split(",") || ["ASC", "AFC"],
+        SM2CARE_USERNAME: process.env.SM2CARE_USERNAME,
+        SM2CARE_PASSWORD: process.env.SM2CARE_PASSWORD,
     };
 
     private readonly logger: Logger;
@@ -55,14 +57,21 @@ export class SpeedyBeemo {
         await this.page.goto(SpeedyBeemo.SM2CARE_LOGIN_PAGE_URL);
         await this.page.waitForLoadState("networkidle");
 
+        if (SpeedyBeemo.WEB_SCRAPER_PARAMS.SM2CARE_USERNAME && SpeedyBeemo.WEB_SCRAPER_PARAMS.SM2CARE_PASSWORD) {
+            await this.page.fill("#id_sm_utenti_username", SpeedyBeemo.WEB_SCRAPER_PARAMS.SM2CARE_USERNAME);
+            await this.page.fill("#id_sm_utenti_password", SpeedyBeemo.WEB_SCRAPER_PARAMS.SM2CARE_PASSWORD);
+            await this.page.click("#id_loginForm > div.login-buttons > button");
+        }
+
         for (let i = 0; i < SpeedyBeemo.SM2CARE_LOGIN_ITERATIONS && !this.page.url().match(SpeedyBeemo.SM2CARE_HOMEPAGE_URL); i++) {
             try {
                 await this.page.waitForURL(new RegExp(SpeedyBeemo.SM2CARE_HOMEPAGE_URL), { timeout: SpeedyBeemo.SM2CARE_LOGIN_TIMEOUT_MS });
             }
-            catch {
+            catch (e) {
                 if (i + 1 === SpeedyBeemo.SM2CARE_LOGIN_ITERATIONS) {
                     this.logger.error("Login non effettuato entro il tempo limite.");
                 }
+                throw e; 
             }
         }
     }
@@ -133,20 +142,19 @@ export class SpeedyBeemo {
         // Cerca l'ID del modello da configurare
         await this.page.fill("#id_table_panth_modprod_filter > label > input", String(articoloDaConfigurare.idModello));
 
-        const modelloLocator: Locator = this.page.locator("#id_table_panth_modprod > tbody > tr:nth-child(1)", { hasText: new RegExp(`^${articoloDaConfigurare.idModello}$`)});
+        const modelloTrLocator: Locator = this.page.locator("#id_table_panth_modprod > tbody > tr:nth-child(1)");
 
-        // TODO FIX qua si rompe
         // Aspetta che venga visualizzato solo un modello, oppure che non ne venga visualizzato nessuno.
         await this.waitForSuccessOrThrow(
             // Se compare la riga con l'ID del modello che vogliamo importare, vai avanti
-            modelloLocator,
+            modelloTrLocator.locator("td:nth-child(2)", { hasText: new RegExp(`^${articoloDaConfigurare.idModello}$`)}),
             // Se non viene trovato alcun risultato, esplodi
             this.page.locator("#id_table_panth_modprod > tbody > tr > td", { hasText: "La ricerca non ha portato alcun risultato." }),
             new SpeedyBeemoException(`Modello produttivo con ID '${articoloDaConfigurare.idModello}' non trovato. Il modello potrebbe non esistere in Panthera, oppure potrebbe essere stato impostato su uno stato diverso da 'valido'.`),
-        )
+        );
 
         // Clicca sulla checkbox per selezionare il modello
-        await modelloLocator.locator("td:nth-child(1) > a").click();
+        await modelloTrLocator.locator("td:nth-child(1) > a").click();
         // Clicca su "Importa"
         await this.page.click("#id_pris_articoli_modprod_modal_importa");
 
@@ -154,34 +162,60 @@ export class SpeedyBeemo {
         await this.page.selectOption("#id_table_pris_articoli_modprod_length > label > select", "100");
 
         if (SpeedyBeemo.WEB_SCRAPER_PARAMS.APPLY_CONFIG) {
-            // Itera su tutte le attività
-            for (let i = 0; i < await this.countRowsInTBody(this.page.locator("#id_table_pris_articoli_modprod > tbody")); i++) {
-                const attivitaTrLocator: Locator = this.page.locator(`#id_table_pris_articoli_modprod > tbody > tr`).nth(i);
-                const timeout = 250;
+            // Indica se il webscraper ha già settato un'attività per il conteggio dei pezzi OK.
+            let thumbOkHasBeenSet: boolean = false;
 
-                const [ codiceAttivita, hasRedArrow, hasGreenArrow, isOkThumbDown, isKoThumbDown ]:
+            // Itera su tutte le attività
+            for (let i = 0; i < await this.countRowsInTBody(this.page.locator("#id_table_pris_articoli_modprod > tbody > tr")); i++) {
+                const attivitaTrLocator: Locator = this.page.locator(`#id_table_pris_articoli_modprod > tbody > tr`).nth(i);
+
+                const [ codiceAttivita, hasRedArrow, hasGreenArrow, isOkThumbVisible, isKoThumbVisible ]:
                     [ string, boolean, boolean, boolean, boolean ] = await Promise.all([
-                    attivitaTrLocator.locator("td:nth-child(4)").innerText({ timeout }),
-                    attivitaTrLocator.locator("i.fas.fa-angle-double-right.text-red").first().isVisible({ timeout }),
-                    attivitaTrLocator.locator("i.fas.fa-angle-double-right.text-green").first().isVisible({ timeout }),
-                    attivitaTrLocator.locator("td:nth-child(7) > a > i.fas.fa-thumbs-down.text-red").isVisible({ timeout }),
-                    attivitaTrLocator.locator("td:nth-child(8) > a > i.fas.fa-thumbs-down.text-red").isVisible({ timeout }),
+                    attivitaTrLocator.locator("td:nth-child(4)").innerText(),
+                    attivitaTrLocator.locator("i.fas.fa-angle-double-right.text-red").first().isVisible(),
+                    attivitaTrLocator.locator("i.fas.fa-angle-double-right.text-green").first().isVisible(),
+                    attivitaTrLocator.locator("td:nth-child(7)").isVisible(),
+                    attivitaTrLocator.locator("td:nth-child(8)").isVisible(),
                 ]);
+
+                const [ isOkThumbDown, isKoThumbDown ]: [ boolean | null, boolean | null ] = await Promise.all([
+                    isOkThumbVisible ? attivitaTrLocator.locator("td:nth-child(7) > a > i.fas.fa-thumbs-down.text-red").isVisible() : null,
+                    isKoThumbVisible ? attivitaTrLocator.locator("td:nth-child(8) > a > i.fas.fa-thumbs-down.text-red").isVisible() : null,
+                ]);
+
+                const [ thumbOkLocator, thumbKoLocator ]: [ Locator, Locator ] = [
+                    attivitaTrLocator.locator("td:nth-child(7) > a"),
+                    attivitaTrLocator.locator("td:nth-child(8) > a"),
+                ];
+
+                // Configurazione pezzi OK
+                if (
+                    !thumbOkHasBeenSet && 
+                    hasGreenArrow && 
+                    isOkThumbDown && 
+                    SpeedyBeemo.WEB_SCRAPER_PARAMS.APPLY_THUMB_OK && 
+                    SpeedyBeemo.WEB_SCRAPER_PARAMS.THUMB_OK_ACTIVITIES.includes(codiceAttivita)
+                ) {
+                    await thumbOkLocator.click();
+                    thumbOkHasBeenSet = true;
+                }
 
                 // Configurazione scarti
                 if (hasRedArrow && isKoThumbDown) {
-                    await attivitaTrLocator.locator("td:nth-child(7) > a").click();
+                    await thumbKoLocator.click();
                 }
 
-                // Configurazione pezzi OK
-                if (hasGreenArrow && isOkThumbDown && SpeedyBeemo.WEB_SCRAPER_PARAMS.APPLY_THUMB_OK && SpeedyBeemo.WEB_SCRAPER_PARAMS.THUMB_OK_ACTIVITIES.includes(codiceAttivita)) {
-                    await attivitaTrLocator.locator("td:nth-child(8) > a").click();
+                // Se l'attività corrente ha il pollice per il conteggio OK attivo (settato in automatico da Beemo), 
+                // ma il conteggio è già stato assegnato a un'altra attività precedente, 
+                // tira giù il pollice.
+                if (isOkThumbDown === false && thumbOkHasBeenSet) {
+                    await thumbOkLocator.click();
                 }
             }
         }
 
         // Informa l'utente che la configurazione è stata applicata. Chiedi di salvare oppure di chiudere la finestra.
-        // TODO completa
+        this.logger.info("Configurazione completata:", articoloDaConfigurare);
     }
 
     private async waitForSuccessOrThrow(successLocator: Locator, errorLocator: Locator, exception: SpeedyBeemoException): Promise<void> {

@@ -5,7 +5,7 @@ import path from "path";
 import {CsvFileException} from "../exceptions/csv-file.exception";
 
 export const CSV_FILE_NAME = "config.csv";
-const CSV_FILE_PATH = path.join(BASE_DIR, "config.csv");
+export const CSV_FILE_PATH = path.join(BASE_DIR, "config.csv");
 
 export function getArticoliDaConfigurare(): Map<string, ArticoloDaConfigurare> {
     if (!fs.existsSync(CSV_FILE_PATH)) {

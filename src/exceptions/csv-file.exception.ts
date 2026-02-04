@@ -1,4 +1,4 @@
-import {CSV_FILE_NAME} from "../helpers/csv";
+import {CSV_FILE_NAME, CSV_FILE_PATH} from "../helpers/csv";
 import {CSV_HEADER_LINE} from "../types/articolo-da-configurare";
 import {ZodError} from "zod";
 
@@ -8,7 +8,7 @@ export class CsvFileException extends Error {
     }
 
     static missingFile(): CsvFileException {
-        return new CsvFileException(`File '${CSV_FILE_NAME}' non trovato.`);
+        return new CsvFileException(`File '${CSV_FILE_PATH}' non trovato.`);
     }
 
     static missingHeaderLine(): CsvFileException {

@@ -43,7 +43,10 @@ export class Logger implements ILogger {
 
     error(...data: unknown[]): void {
         const msg = this.buildMessage(data);
-        console.error(msg);
+        console.error(
+            msg[0],
+            msg[1].map(data => data instanceof Error ? data.message : data)
+        );
         this.appendToFile(this.errorFilePath, msg);
     }
 

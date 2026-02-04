@@ -2,10 +2,11 @@
   "name": "speedy_beemo",
   "version": "1.0.0",
   "description": "",
-  "main": "dist/index.js",
+  "main": "dist/main.js",
   "type": "module",
   "scripts": {
-    "build": "tsc"
+    "build": "tsc",
+    "dev": "tsx src/main.ts"
   },
   "devDependencies": {
     "@types/dotenv": "^6.1.1",
