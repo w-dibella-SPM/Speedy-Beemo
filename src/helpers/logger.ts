@@ -56,7 +56,7 @@ export class Logger implements ILogger {
 
             const dCopy = { ...d };
             for (const key of Object.keys(dCopy)) {
-                if (key.match(/password/i)) {
+                if (key.match(/password/i) && dCopy[key as keyof typeof dCopy]) {
                     // @ts-ignore
                     dCopy[key] = "*".repeat(12);
                 }

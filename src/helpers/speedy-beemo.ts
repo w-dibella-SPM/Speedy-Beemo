@@ -13,7 +13,7 @@ export class SpeedyBeemo {
     private static readonly SM2CARE_LOGIN_TIMEOUT_MS = 100;
     private static readonly SM2CARE_LOGIN_ITERATIONS = 6;
     private static readonly REMAINING_ARTICOLI_DA_CONFIGURARE_DIR = "articoli_da_configurare_rimanenti";
-    private static readonly REMAINING_ARTICOLI_DA_CONFIGURARE_FILE_NAME = "articoli_da_configurare_rimanenti.csv";
+    private static readonly REMAINING_ARTICOLI_DA_CONFIGURARE_FILE_NAME = "articoli_da_configurare_rimanenti";
 
     static readonly WEB_SCRAPER_PARAMS = {
         APPLY_CONFIG: (process.env.APPLY_CONFIG || "true") === "true",
@@ -285,14 +285,16 @@ export class SpeedyBeemo {
     }
 
     private async showBlockingDialog(prompt: string): Promise<void> {
+        const emptyFunction = () => {};
+
         // Obbliga l'utente ad accettare manualmente i dialog.
-        this.page.on("dialog", () => {});
+        this.page.addListener("dialog", emptyFunction);
 
         // Attendi che l'utente visualizzi l'alert.
         await this.page.evaluate(prpt => alert(prpt), prompt)
 
         // Ripristina il comportamento di default dei dialog.
-        this.page.on("dialog", dialog => dialog.dismiss());
+        this.page.removeListener("dialog", emptyFunction);
     }
 
     private saveRemainingArticoliDaConfigurare(): void {
@@ -300,7 +302,8 @@ export class SpeedyBeemo {
 
         const filePath: string = path.join(
             SpeedyBeemo.REMAINING_ARTICOLI_DA_CONFIGURARE_DIR,
-            `${SpeedyBeemo.REMAINING_ARTICOLI_DA_CONFIGURARE_FILE_NAME}_${new Date().toISOString().replaceAll(":", "-")}`
+            `${SpeedyBeemo.REMAINING_ARTICOLI_DA_CONFIGURARE_FILE_NAME}_${new Date().toISOString().replaceAll(":", "-")}`,
+            ".csv"
         ); 
         
         // Add header line
