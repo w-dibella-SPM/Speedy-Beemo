@@ -1,5 +1,5 @@
 import fs from "fs";
-import {Browser, BrowserContext, chromium, Dialog, Locator, Page} from "playwright";
+import {Browser, BrowserContext, chromium, Locator, Page} from "playwright";
 import { type ArticoloDaConfigurare } from "../types/articolo-da-configurare";
 import {Logger} from "./logger";
 import {SpeedyBeemoException} from "../exceptions/speedy-beemo.exception";
@@ -183,8 +183,9 @@ export class SpeedyBeemo {
                 const [ codiceAttivita, hasRedArrow, hasGreenArrow, isOkThumbVisible, isKoThumbVisible ]:
                     [ string, boolean, boolean, boolean, boolean ] = await Promise.all([
                     attivitaTrLocator.locator("td:nth-child(4)").innerText(),
-                    attivitaTrLocator.locator("i.fas.fa-angle-double-right.text-red").first().isVisible(),
-                    attivitaTrLocator.locator("i.fas.fa-angle-double-right.text-green").first().isVisible(),
+                    // TODO FIX questo ritorna true sulle AL (impossibile)
+                    attivitaTrLocator.locator("td:nth-child(6)").locator("i.fas.fa-angle-double-right.text-red").first().isVisible(),
+                    attivitaTrLocator.locator("td:nth-child(6)").locator("i.fas.fa-angle-double-right.text-green").first().isVisible(),
                     attivitaTrLocator.locator("td:nth-child(7)").isVisible(),
                     attivitaTrLocator.locator("td:nth-child(8)").isVisible(),
                 ]);
@@ -193,6 +194,16 @@ export class SpeedyBeemo {
                     isOkThumbVisible ? attivitaTrLocator.locator("td:nth-child(7) > a > i.fas.fa-thumbs-down.text-red").isVisible() : null,
                     isKoThumbVisible ? attivitaTrLocator.locator("td:nth-child(8) > a > i.fas.fa-thumbs-down.text-red").isVisible() : null,
                 ]);
+
+                console.log(
+                    "codiceAttivita", codiceAttivita,
+                    "hasRedArrow", hasRedArrow,
+                    "hasGreenArrow", hasGreenArrow,
+                    "isOkThumbVisible", isOkThumbVisible,
+                    "isKoThumbVisible", isKoThumbVisible,
+                    "isOkThumbDown", isOkThumbDown,
+                    "isKoThumbDown", isKoThumbDown
+                );
 
                 const [ thumbOkLocator, thumbKoLocator ]: [ Locator, Locator ] = [
                     attivitaTrLocator.locator("td:nth-child(7) > a"),
@@ -217,9 +228,16 @@ export class SpeedyBeemo {
                 }
 
                 // Se l'attività corrente ha il pollice per il conteggio OK attivo (settato in automatico da Beemo), 
-                // ma il conteggio è già stato assegnato a un'altra attività precedente, 
+                // ma il conteggio è già stato assegnato a un'altra attività precedente
+                // OPPURE se l'attività non fa parte delle attività per le quali andrebbero conteggiati gli OK,
                 // tira giù il pollice.
-                if (isOkThumbDown === false && thumbOkHasBeenSet) {
+                if (
+                    false === isOkThumbDown &&
+                    (
+                        thumbOkHasBeenSet ||
+                        !SpeedyBeemo.WEB_SCRAPER_PARAMS.THUMB_OK_ACTIVITIES.includes(codiceAttivita)
+                    )
+                ) {
                     await thumbOkLocator.click();
                 }
             }
@@ -298,12 +316,11 @@ export class SpeedyBeemo {
     }
 
     private saveRemainingArticoliDaConfigurare(): void {
-        fs.mkdirSync(SpeedyBeemo.REMAINING_ARTICOLI_DA_CONFIGURARE_DIR);
+        fs.mkdirSync(SpeedyBeemo.REMAINING_ARTICOLI_DA_CONFIGURARE_DIR, { recursive: true });
 
         const filePath: string = path.join(
             SpeedyBeemo.REMAINING_ARTICOLI_DA_CONFIGURARE_DIR,
-            `${SpeedyBeemo.REMAINING_ARTICOLI_DA_CONFIGURARE_FILE_NAME}_${new Date().toISOString().replaceAll(":", "-")}`,
-            ".csv"
+            `${SpeedyBeemo.REMAINING_ARTICOLI_DA_CONFIGURARE_FILE_NAME}_${new Date().toISOString().replaceAll(":", "-")}.csv`
         ); 
         
         // Add header line

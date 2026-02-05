@@ -6,6 +6,7 @@
       <excludeFolder url="file://$MODULE_DIR$/logs/error" />
       <excludeFolder url="file://$MODULE_DIR$/logs/run" />
       <excludeFolder url="file://$MODULE_DIR$/src/logs" />
+      <excludeFolder url="file://$MODULE_DIR$/SpeedyBeemo_working" />
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
