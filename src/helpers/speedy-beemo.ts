@@ -57,7 +57,7 @@ export class SpeedyBeemo {
             this.saveRemainingArticoliDaConfigurare();
         }
         finally {
-            await this.browser.close();
+            // await this.browser.close();
         }
     }
 
@@ -183,27 +183,16 @@ export class SpeedyBeemo {
                 const [ codiceAttivita, hasRedArrow, hasGreenArrow, isOkThumbVisible, isKoThumbVisible ]:
                     [ string, boolean, boolean, boolean, boolean ] = await Promise.all([
                     attivitaTrLocator.locator("td:nth-child(4)").innerText(),
-                    // TODO FIX questo ritorna true sulle AL (impossibile)
                     attivitaTrLocator.locator("td:nth-child(6)").locator("i.fas.fa-angle-double-right.text-red").first().isVisible(),
                     attivitaTrLocator.locator("td:nth-child(6)").locator("i.fas.fa-angle-double-right.text-green").first().isVisible(),
-                    attivitaTrLocator.locator("td:nth-child(7)").isVisible(),
-                    attivitaTrLocator.locator("td:nth-child(8)").isVisible(),
+                    attivitaTrLocator.locator("td:nth-child(7) > a > i").isVisible(),
+                    attivitaTrLocator.locator("td:nth-child(8) > a > i").isVisible(),
                 ]);
 
                 const [ isOkThumbDown, isKoThumbDown ]: [ boolean | null, boolean | null ] = await Promise.all([
                     isOkThumbVisible ? attivitaTrLocator.locator("td:nth-child(7) > a > i.fas.fa-thumbs-down.text-red").isVisible() : null,
                     isKoThumbVisible ? attivitaTrLocator.locator("td:nth-child(8) > a > i.fas.fa-thumbs-down.text-red").isVisible() : null,
                 ]);
-
-                console.log(
-                    "codiceAttivita", codiceAttivita,
-                    "hasRedArrow", hasRedArrow,
-                    "hasGreenArrow", hasGreenArrow,
-                    "isOkThumbVisible", isOkThumbVisible,
-                    "isKoThumbVisible", isKoThumbVisible,
-                    "isOkThumbDown", isOkThumbDown,
-                    "isKoThumbDown", isKoThumbDown
-                );
 
                 const [ thumbOkLocator, thumbKoLocator ]: [ Locator, Locator ] = [
                     attivitaTrLocator.locator("td:nth-child(7) > a"),
