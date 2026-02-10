@@ -1,0 +1,38 @@
+name: build-and-release.yml
+on:
+  # Esegui quando crei un tag che inizia con "v" (es. v1.0)
+  push:
+    tags:
+      - 'v*'
+  # Oppure manuale dal tab "Actions"
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Install NodeJS to build the project
+        uses: actions/setup-node@v6
+        with:
+          node-version: 'latest'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build the project
+        run: |
+          chmod +x ./build.sh
+          ./build.sh
+
+      - name: Create release
+        uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: SpeedyBeemo.zip

@@ -10,7 +10,7 @@ export class SpeedyBeemo {
     private static readonly SM2CARE_BASE_URL = "http://172.23.0.111/";
     private static readonly SM2CARE_LOGIN_PAGE_URL = `${SpeedyBeemo.SM2CARE_BASE_URL}login.php`;
     private static readonly SM2CARE_HOMEPAGE_URL = `${SpeedyBeemo.SM2CARE_BASE_URL}index.php`;
-    private static readonly SM2CARE_LOGIN_TIMEOUT_MS = 100;
+    private static readonly SM2CARE_LOGIN_TIMEOUT_MS = 10000;
     private static readonly SM2CARE_LOGIN_ITERATIONS = 6;
     private static readonly REMAINING_ARTICOLI_DA_CONFIGURARE_DIR = "articoli_da_configurare_rimanenti";
     private static readonly REMAINING_ARTICOLI_DA_CONFIGURARE_FILE_NAME = "articoli_da_configurare_rimanenti";
