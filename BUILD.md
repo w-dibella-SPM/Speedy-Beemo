@@ -1,3 +1,9 @@
+# Come buildare il progetto
+### Esegui `build.sh`.
+
+---
+
+### Oppure esegui i seguenti comandi da terminale
 - Compila il progetto
 
 ```bash

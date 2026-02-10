@@ -6,6 +6,11 @@
 
 Speedy Beemo è un web scraper progettato per creare più rapidamente configurazioni in Beemo, automatizzando azioni ripetitive.
 
+## 🏁 Avvio dell'applicazione
+Per avviare l'applicazione, esegui il programma `SpeedyBeemo.bat`.
+> - Assicurati di aver creato il file `config.csv` prima di avviare il programma.
+> - Se desideri personalizzare l'esecuzione del programma, assicurati di aver creato il file `.env`. Trovi le informazioni di personalizzazione nella sezione "**Override logica di default**".
+
 ## 📋 Requisiti
 
 Il tool si aspetta un file chiamato `config.csv` nella cartella principale, strutturato come segue:

@@ -57,7 +57,7 @@ export class SpeedyBeemo {
             this.saveRemainingArticoliDaConfigurare();
         }
         finally {
-            // await this.browser.close();
+            await this.browser.close();
         }
     }
 
