@@ -119,7 +119,7 @@ export class SpeedyBeemo {
             // Se compare una riga contenente la famiglia, allora vai avanti
             this.page.locator("#id_table_famiglie > tbody > tr:nth-child(1) > td:nth-child(1)", { hasText: new RegExp(`^${articoloDaConfigurare.famiglia}$`)}),
             // Se la tabella è vuota, esplodi
-            this.page.locator("#id_table_famiglie > tbody > tr > td", { hasText: "La ricerca non ha portato alcun risultato." }),
+            this.page.locator("#id_table_famiglie > tbody > tr > td", { hasText: /Nessun dato presente nella tabella|La ricerca non ha portato alcun risultato/ }),
             new SpeedyBeemoException(`Famiglia '${articoloDaConfigurare.famiglia}' non trovata.`),
         );
 
@@ -132,7 +132,7 @@ export class SpeedyBeemo {
         // Aspetta che la tabella dei modelli diventi visibile
         await this.waitForSuccessOrThrow(
             // Se non compare alcun modello, allora vai avanti
-            this.page.locator("#id_table_pris_articoli > tbody > tr > td", { hasText: "La ricerca non ha portato alcun risultato." }),
+            this.page.locator("#id_table_pris_articoli > tbody > tr > td", { hasText: /Nessun dato presente nella tabella|La ricerca non ha portato alcun risultato/ }),
             // Se compare una configurazione con l'ID modello corrente, esplodi
             this.page.locator("#id_table_pris_articoli > tbody > tr > td:nth-child(3)", { hasText: new RegExp(`^${articoloDaConfigurare.idModello}$`)}),
             new SpeedyBeemoException(`Esiste già una configurazione per il modello con ID '${articoloDaConfigurare.idModello}'.`)
@@ -146,7 +146,7 @@ export class SpeedyBeemo {
         // Cerca l'articolo
         await this.page.fill("body > span > span > span.select2-search.select2-search--dropdown > input", articoloDaConfigurare.articolo);
         // Clicca sul primo articolo visualizzato
-        await this.page.click("#select2-id_pris_articoli_codice-results > li:nth-child(1)");
+        await this.page.locator("#select2-id_pris_articoli_codice-results > li", { hasText: new RegExp(`^${articoloDaConfigurare.articolo}:`) }).click();
         // Clicca su "importa modello"
         await this.page.click("#id_pris_articoli_modprod_import");
 
@@ -160,7 +160,7 @@ export class SpeedyBeemo {
             // Se compare la riga con l'ID del modello che vogliamo importare, vai avanti
             modelloTrLocator.locator("td:nth-child(2)", { hasText: new RegExp(`^${articoloDaConfigurare.idModello}$`)}),
             // Se non viene trovato alcun risultato, esplodi
-            this.page.locator("#id_table_panth_modprod > tbody > tr > td", { hasText: "La ricerca non ha portato alcun risultato." }),
+            this.page.locator("#id_table_panth_modprod > tbody > tr > td", { hasText: /Nessun dato presente nella tabella|La ricerca non ha portato alcun risultato/ }),
             new SpeedyBeemoException(`Modello produttivo con ID '${articoloDaConfigurare.idModello}' non trovato. Il modello potrebbe non esistere in Panthera, oppure potrebbe essere stato impostato su uno stato diverso da 'valido'.`),
         );
 
