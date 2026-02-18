@@ -44,3 +44,9 @@ pause
 
 - Vai su Windows e avvia `SpeedyBeemo.bat`
 - Fatto!
+
+# Deploy
+### Push con tag `vX.X.X`:
+
+---
+Per creare una release, è sufficiente creare un commit con un tag `vX.X.X`, dove X corrisponde con il numero della versione.
