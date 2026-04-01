@@ -18,12 +18,12 @@ Per avviare l'applicazione, esegui il programma `SpeedyBeemo.bat`.
 Il tool si aspetta un file chiamato `config.csv` nella cartella principale, strutturato come segue:
 
 ```
-ID_MODPROD,ARTICOLO,FAMIGLIA
+ID_MODELLO,ARTICOLO,FAMIGLIA
 12345,F010-000403,BMW 5 Alette
 12346,F010-001234,G70-TOTALE
 ```
 
-> **NOTA**: la prima riga viene considerata come intestazione, pertanto è **importante inserirla** nel file.
+> **NOTA**: la prima riga viene considerata come intestazione, pertanto è **importante inserirla** nel file nell'esatto ordine definito qui sopra.
 
 ## 📖 Funzionamento
 
